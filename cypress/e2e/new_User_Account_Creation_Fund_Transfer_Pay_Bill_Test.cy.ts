@@ -1,7 +1,6 @@
 import { LoginPage } from '../pages/LoginPage';
 import { RegistrationPage } from '../pages/RegistrationPage';
-import { MainPage } from '../pages/MainPage';
-import { HomePage } from '../pages/HomePage';
+import { AccountServicesNavigation } from '../pages/AccountServicesNavigation';
 import { OpenNewAccountPage } from '../pages/OpenNewAccountPage';
 import { TransferFundsPage } from '../pages/TransferFundsPage';
 import { PayBillPage } from '../pages/PayBillPage';
@@ -12,23 +11,22 @@ let password = 'KucgVgd2024*';
 describe('New User navigate to Para bank, perform funds transfer and pay bill end to end', () => {
   const loginPage = new LoginPage();
   const registrationPage = new RegistrationPage();
-  const homePage = new HomePage();
+  const accountServicesNavigation = new AccountServicesNavigation();
   const openNewAccountPage = new OpenNewAccountPage();
   const transferFundsPage = new TransferFundsPage();
-  const mainPage = new MainPage();
   const payBillPage = new PayBillPage();
 
   before(() => {
-    cy.visit('https://parabank.parasoft.com');
+    cy.visit('');
     cy.contains('ParaBank');
     username = registrationPage.fillCompleteRegistrationForm();
     cy.log(username);
     cy.contains('Welcome');
-    mainPage.logOutFromApplication();
+    accountServicesNavigation.logout();
   });
 
   beforeEach(() => {
-    cy.visit('https://parabank.parasoft.com');
+    cy.visit('');
     cy.contains('ParaBank');
     cy.log(username);
     loginPage.enterUsername(username);
@@ -37,13 +35,11 @@ describe('New User navigate to Para bank, perform funds transfer and pay bill en
   });
 
   it('Test #01: Create saving account using Open New Account page', () => {
-    homePage.clickOpenNewAccount();
+    accountServicesNavigation.clickOpenNewAccount();
 
-    cy.request('https://parabank.parasoft.com/parabank/openaccount.htm').then(
-      (response) => {
-        expect(response.status).to.eq(200);
-      }
-    );
+    cy.request('/parabank/openaccount.htm').then((response) => {
+      expect(response.status).to.eq(200);
+    });
     openNewAccountPage.verifyNewAccountPage();
     openNewAccountPage.selectSavingsAccountType();
     openNewAccountPage.clickSubmitButton();
@@ -56,22 +52,20 @@ describe('New User navigate to Para bank, perform funds transfer and pay bill en
   });
 
   it('Test #02: Transfer funds from above newly created acount to another account', () => {
-    homePage.clickTransferFunds();
+    accountServicesNavigation.clickTransferFunds();
 
-    cy.request('https://parabank.parasoft.com/parabank/transfer.htm').then(
-      (response) => {
-        expect(response.status).to.eq(200);
+    cy.request('/parabank/transfer.htm').then((response) => {
+      expect(response.status).to.eq(200);
 
-        transferFundsPage.verifyTransferFundsPage();
-        transferFundsPage.enterAmount('100');
-        transferFundsPage.selectNewlyCreatedAccount(Cypress.env('account'));
-        transferFundsPage.clickSubmitbutton();
-      }
-    );
+      transferFundsPage.verifyTransferFundsPage();
+      transferFundsPage.enterAmount('100');
+      transferFundsPage.selectNewlyCreatedAccount(Cypress.env('account'));
+      transferFundsPage.clickSubmitbutton();
+    });
   });
 
   it('Test #03: Pay the bill from the new account', () => {
-    homePage.clickBillPay();
+    accountServicesNavigation.clickBillPay();
     payBillPage
       .enterPayeeDetailsAndPay(Cypress.env('account'))
       .should('have.text', 'Bill Payment Complete');
@@ -79,11 +73,15 @@ describe('New User navigate to Para bank, perform funds transfer and pay bill en
 
   it('Test #04: API Test: Find transaction for newly created account by amount', () => {
     cy.request(
-      'https://parabank.parasoft.com/parabank/services_proxy/bank/accounts/' +
+      '/parabank/services_proxy/bank/accounts/' +
         Cypress.env('account') +
         '/transactions/amount/100'
     ).then((response) => {
       expect(response.status).to.eq(200);
     });
+  });
+
+  afterEach(() => {
+    accountServicesNavigation.logout();
   });
 });
